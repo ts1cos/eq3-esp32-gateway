@@ -139,6 +139,7 @@ String stateJson(bool includeSettings) {
     json += ",\"mqttTopic\":\"" + jsonEscape(config.mqttTopic) + "\"";
     json += ",\"mqttUpdateIntervalSeconds\":" + String(config.mqttUpdateIntervalSeconds);
     json += ",\"homeAssistantDiscovery\":" + String(config.homeAssistantDiscovery ? "true" : "false");
+    json += ",\"webAuthenticationEnabled\":" + String(config.webPassword.isEmpty() ? "false" : "true");
   }
   json += ",\"devices\":[";
   bool first = true;
@@ -405,6 +406,12 @@ void setupRoutes() {
     }
     bool oldDiscovery = config.homeAssistantDiscovery;
     bool newDiscovery = server.hasArg("haDiscovery");
+    bool newWebAuthenticationEnabled = server.hasArg("webAuthenticationEnabled");
+    String newWebPassword = server.arg("webPassword");
+    if (newWebAuthenticationEnabled && config.webPassword.isEmpty() && newWebPassword.isEmpty()) {
+      sendJson(400, "{\"message\":\"Bitte ein Passwort für die Web-Anmeldung festlegen.\"}");
+      return;
+    }
     if (oldDiscovery && !newDiscovery && mqtt.connected()) {
       for (size_t i = 0; i < AppConfig::MAX_THERMOSTATS; ++i) publishDiscovery(i, false);
     }
@@ -425,7 +432,8 @@ void setupRoutes() {
     if (config.mqttTopic.isEmpty()) config.mqttTopic = "eq3/gateway";
     config.mqttUpdateIntervalSeconds = constrain(server.arg("mqttUpdateIntervalSeconds").toInt(), 5, 3600);
     config.homeAssistantDiscovery = newDiscovery;
-    if (!server.arg("webPassword").isEmpty()) config.webPassword = server.arg("webPassword");
+    if (!newWebAuthenticationEnabled) config.webPassword = "";
+    else if (!newWebPassword.isEmpty()) config.webPassword = newWebPassword;
     config.save();
     if (!oldDiscovery && newDiscovery && mqtt.connected()) publishAll();
     sendJson(200, "{\"ok\":true}");
@@ -693,4 +701,5 @@ void loop() {
   if (restartAt && millis() >= restartAt) ESP.restart();
   delay(2);
 }
+
 
