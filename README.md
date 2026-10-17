@@ -4,7 +4,7 @@ Bluetooth-LE-zu-MQTT-Gateway für bis zu drei eQ-3/Eqiva `CC-RT-BLE` Heizkörper
 
 Die Firmware wurde von **therock** erstellt. Sie stellt eine lokale Weboberfläche bereit, hält die Thermostate per Bluetooth verbunden und bindet jedes Gerät über MQTT und Home Assistant Discovery ein.
 
-Aktuelle Version: **1.4.0**
+Aktuelle Version: **1.4.1**
 
 > Der ESP32-C6 wird aktuell nicht unterstützt oder weiterentwickelt. Die vorhandenen C6-Dateien stammen aus einem älteren Entwicklungsstand.
 
@@ -21,7 +21,7 @@ Aktuelle Version: **1.4.0**
 - Home Assistant Discovery für Klima, Batterie-Warnung, Ventilöffnung, RSSI und Verbindungsstatus
 - Web-OTA mit automatischer Rückkehr zur Hauptseite
 - Versionierte OTA- und Factory-Firmware
-- Optionaler Passwortschutz der Weboberfläche
+- Explizit ein- und ausschaltbarer Passwortschutz der Weboberfläche
 
 ## Benötigte Hardware
 
@@ -37,7 +37,7 @@ Aktuelle Version: **1.4.0**
 
 Für ein neues oder vollständig zurückzusetzendes Board die aktuelle Factory-Datei verwenden:
 
-[Factory-Firmware v1.4.0](firmware/esp32-wroom-32d/eq3-gateway-wroom-v1.4.0-factory.bin)
+[Factory-Firmware v1.4.1](firmware/esp32-wroom-32d/eq3-gateway-wroom-v1.4.1-factory.bin)
 
 Die ausführliche Anleitung für Windows, Linux und macOS steht unter [Factory-Firmware flashen](docs/FACTORY_FLASH.md).
 
@@ -46,7 +46,7 @@ Die ausführliche Anleitung für Windows, Linux und macOS steht unter [Factory-F
 1. Nach dem Flash mit dem WLAN `eq3-gateway-XXXXXX` verbinden.
 2. Das Standardpasswort lautet `eq3setup`.
 3. Falls sich das Portal nicht automatisch öffnet, `http://192.168.4.1` aufrufen.
-4. Gerätenamen, WLAN und optional MQTT eintragen.
+4. Gerätenamen, WLAN und optional MQTT eintragen. Die Web-Anmeldung bleibt standardmäßig ausgeschaltet.
 5. Speichern und den Neustart abwarten.
 6. Danach `http://GERAETENAME.local` oder die angezeigte IP-Adresse öffnen.
 
@@ -63,7 +63,7 @@ Die ausführliche Anleitung für Windows, Linux und macOS steht unter [Factory-F
 
 Für Updates über die Weboberfläche ausschließlich eine Datei mit der Endung `-ota.bin` verwenden:
 
-[OTA-Firmware v1.4.0](firmware/esp32-wroom-32d/eq3-gateway-wroom-v1.4.0-ota.bin)
+[OTA-Firmware v1.4.1](firmware/esp32-wroom-32d/eq3-gateway-wroom-v1.4.1-ota.bin)
 
 Unter **System & Firmware** die Datei auswählen und **OTA-Update installieren** drücken. Nach erfolgreichem Upload startet der ESP neu; der Browser wartet auf das Gateway und lädt anschließend automatisch die Hauptseite.
 
@@ -74,6 +74,12 @@ Die Factory-Datei ist kein OTA-Update. Sie wird von der Weboberfläche abgelehnt
 Der Netzwerkname darf maximal 32 Buchstaben, Zahlen oder Bindestriche enthalten. Er wird als WLAN-Hostname, mDNS-Name und Teil der MQTT-Client-ID verwendet.
 
 Standardmäßig verwendet das Gateway DHCP. Alternativ lassen sich feste IPv4-Adresse, Subnetzmaske, Gateway sowie primärer und optionaler zweiter DNS-Server eintragen. Ohne primären DNS-Eintrag wird die Gateway-Adresse als DNS-Server verwendet. Bei einer nicht erreichbaren WLAN-Konfiguration startet das Einrichtungs-WLAN erneut.
+
+## Web-Anmeldung
+
+Die Anmeldung für die Weboberfläche ist standardmäßig ausgeschaltet und wird nur aktiv, wenn der entsprechende Schalter bewusst eingeschaltet wird. Der Benutzername lautet dann `admin`. Beim erstmaligen Aktivieren muss ein Passwort eingetragen werden; ein leeres Passwort lässt ein vorhandenes Passwort unverändert. Wird der Schalter ausgeschaltet und gespeichert, löscht das Gateway das Web-Passwort wieder.
+
+Falls Version 1.4.0 nach dem Setup unerwartet Anmeldedaten verlangt, zuerst `admin` zusammen mit dem WLAN-Passwort probieren. Passwortmanager konnten dieses zuvor unbemerkt in das optionale Feld übernehmen. Ist das Passwort unbekannt, muss der Flash vollständig gelöscht und anschließend die aktuelle Factory-Datei installiert werden.
 
 ## MQTT
 
@@ -151,3 +157,4 @@ Grundlage für die Protokollimplementierung: [Heckie75/Eqiva-Smart-Radiator-Ther
 - [Versionshistorie](CHANGELOG.md)
 - [Offizielle esptool-Installation](https://docs.espressif.com/projects/esptool/en/latest/esp32/installation.html)
 - [Offizielle esptool-Flash-Anleitung](https://docs.espressif.com/projects/esptool/en/latest/esp32/esptool/flashing-firmware.html)
+
