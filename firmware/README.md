@@ -9,6 +9,7 @@
 
 Die aktuelle Entwicklung und Prüfung erfolgt ausschließlich für das Ziel `esp32-wroom-32d`. Die vorhandenen C6-Dateien stammen von einem älteren Quellstand.
 
-Aktuelle WROOM-Version: **1.4.0**. Sie ermöglicht das nachträgliche Ändern von Thermostatnamen und Pairing-PINs.
+Aktuelle WROOM-Version: **1.4.1**. Die Web-Anmeldung ist nun ausdrücklich schaltbar und standardmäßig deaktiviert.
+
 
 
