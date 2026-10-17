@@ -81,19 +81,19 @@ In das Verzeichnis mit der heruntergeladenen Factory-Datei wechseln.
 ### Windows
 
 ```powershell
-py -m esptool --chip esp32 --port COM5 --baud 460800 write-flash 0x0 eq3-gateway-wroom-v1.4.0-factory.bin
+py -m esptool --chip esp32 --port COM5 --baud 460800 write-flash 0x0 eq3-gateway-wroom-v1.4.1-factory.bin
 ```
 
 ### Linux
 
 ```bash
-python3 -m esptool --chip esp32 --port /dev/ttyUSB0 --baud 460800 write-flash 0x0 eq3-gateway-wroom-v1.4.0-factory.bin
+python3 -m esptool --chip esp32 --port /dev/ttyUSB0 --baud 460800 write-flash 0x0 eq3-gateway-wroom-v1.4.1-factory.bin
 ```
 
 ### macOS
 
 ```bash
-python3 -m esptool --chip esp32 --port /dev/cu.usbserial-0001 --baud 460800 write-flash 0x0 eq3-gateway-wroom-v1.4.0-factory.bin
+python3 -m esptool --chip esp32 --port /dev/cu.usbserial-0001 --baud 460800 write-flash 0x0 eq3-gateway-wroom-v1.4.1-factory.bin
 ```
 
 Wichtig sind `--chip esp32` und die Flash-Adresse `0x0`. Die Datei ist bereits vollständig zusammengeführt; keine weiteren Binärdateien oder Adressen werden benötigt. Die Syntax entspricht der [offiziellen Espressif-Flash-Anleitung](https://docs.espressif.com/projects/esptool/en/latest/esp32/esptool/flashing-firmware.html).
@@ -139,28 +139,29 @@ Eine Factory-Datei niemals über das OTA-Formular hochladen.
 
 ## Prüfsumme kontrollieren
 
-Für Version 1.4.0:
+Für Version 1.4.1:
 
 ```text
-SHA-256 Factory: 007D06F8E076CB8554CAE7314AB1C55B2F3CB556FB9185F95315EB9E30A62EEA
-SHA-256 OTA:     80AC2686EA0C53E675A9D3F310809E0313DB1D6EF13BE5A97DAB35BDAC10CF4C
+SHA-256 Factory: C71C0D692E125B8899EC6A2A086C45F12D53BA543C6553839EF2B68CCE494D57
+SHA-256 OTA:     7C5C54759B81BA55E05F26AC1E838CC8ECF1ADF3473AC1DB46511CECC98D6DA4
 ```
 
 ### Windows PowerShell
 
 ```powershell
-Get-FileHash .\eq3-gateway-wroom-v1.4.0-factory.bin -Algorithm SHA256
+Get-FileHash .\eq3-gateway-wroom-v1.4.1-factory.bin -Algorithm SHA256
 ```
 
 ### Linux
 
 ```bash
-sha256sum eq3-gateway-wroom-v1.4.0-factory.bin
+sha256sum eq3-gateway-wroom-v1.4.1-factory.bin
 ```
 
 ### macOS
 
 ```bash
-shasum -a 256 eq3-gateway-wroom-v1.4.0-factory.bin
+shasum -a 256 eq3-gateway-wroom-v1.4.1-factory.bin
 ```
+
 
