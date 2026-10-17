@@ -1,0 +1,6 @@
+{
+  "version": "1.5.0",
+  "releaseUrl": "https://github.com/ts1cos/eq3-esp32-gateway/releases/tag/v1.5.0",
+  "otaUrl": "https://github.com/ts1cos/eq3-esp32-gateway/releases/download/v1.5.0/eq3-gateway-wroom-v1.5.0-ota.bin",
+  "factoryUrl": "https://github.com/ts1cos/eq3-esp32-gateway/releases/download/v1.5.0/eq3-gateway-wroom-v1.5.0-factory.bin"
+}
