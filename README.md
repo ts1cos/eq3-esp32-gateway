@@ -4,9 +4,9 @@ Bluetooth-LE-zu-MQTT-Gateway für bis zu drei eQ-3/Eqiva `CC-RT-BLE` Heizkörper
 
 Die Firmware wurde von **therock** erstellt. Sie stellt eine lokale Weboberfläche bereit, hält die Thermostate per Bluetooth verbunden und bindet jedes Gerät über MQTT und Home Assistant Discovery ein.
 
-Aktuelle Version: **1.4.1**
+Aktuelle Version: **1.5.0** · [neuester GitHub Release](https://github.com/ts1cos/eq3-esp32-gateway/releases/latest)
 
-> Der ESP32-C6 wird aktuell nicht unterstützt oder weiterentwickelt. Die vorhandenen C6-Dateien stammen aus einem älteren Entwicklungsstand.
+> Der ESP32-C6 wird nicht unterstützt. Für ihn wird keine Firmware mehr bereitgestellt.
 
 ## Funktionen
 
@@ -21,6 +21,7 @@ Aktuelle Version: **1.4.1**
 - Home Assistant Discovery für Klima, Batterie-Warnung, Ventilöffnung, RSSI und Verbindungsstatus
 - Web-OTA mit automatischer Rückkehr zur Hauptseite
 - Versionierte OTA- und Factory-Firmware
+- Manuelle und regelmäßige Prüfung auf eine neue GitHub-Version
 - Explizit ein- und ausschaltbarer Passwortschutz der Weboberfläche
 
 ## Benötigte Hardware
@@ -37,7 +38,7 @@ Aktuelle Version: **1.4.1**
 
 Für ein neues oder vollständig zurückzusetzendes Board die aktuelle Factory-Datei verwenden:
 
-[Factory-Firmware v1.4.1](firmware/esp32-wroom-32d/eq3-gateway-wroom-v1.4.1-factory.bin)
+[Factory-Firmware v1.5.0 herunterladen](https://github.com/ts1cos/eq3-esp32-gateway/releases/download/v1.5.0/eq3-gateway-wroom-v1.5.0-factory.bin)
 
 Die ausführliche Anleitung für Windows, Linux und macOS steht unter [Factory-Firmware flashen](docs/FACTORY_FLASH.md).
 
@@ -63,11 +64,17 @@ Die ausführliche Anleitung für Windows, Linux und macOS steht unter [Factory-F
 
 Für Updates über die Weboberfläche ausschließlich eine Datei mit der Endung `-ota.bin` verwenden:
 
-[OTA-Firmware v1.4.1](firmware/esp32-wroom-32d/eq3-gateway-wroom-v1.4.1-ota.bin)
+[OTA-Firmware v1.5.0 herunterladen](https://github.com/ts1cos/eq3-esp32-gateway/releases/download/v1.5.0/eq3-gateway-wroom-v1.5.0-ota.bin)
 
 Unter **System & Firmware** die Datei auswählen und **OTA-Update installieren** drücken. Nach erfolgreichem Upload startet der ESP neu; der Browser wartet auf das Gateway und lädt anschließend automatisch die Hauptseite.
 
 Die Factory-Datei ist kein OTA-Update. Sie wird von der Weboberfläche abgelehnt und ist nur für einen vollständigen USB-Flash an Adresse `0x0` vorgesehen.
+
+### Prüfung auf neue Versionen
+
+Unter **System & Firmware** zeigt das Gateway die installierte Version und die aktuell auf GitHub veröffentlichte Version. Die Prüfung erfolgt etwa 30 Sekunden nach dem WLAN-Start, anschließend alle sechs Stunden und zusätzlich über **Auf Updates prüfen**. Ein verfügbares Update wird nur angezeigt und verlinkt; es wird niemals automatisch installiert.
+
+Die Abfrage liest ausschließlich die kleine Datei [`firmware/latest.json`](firmware/latest.json). Falls GitHub oder der konfigurierte DNS-Server nicht erreichbar ist, bleibt das Gateway normal in Betrieb und zeigt den Fehler bei der Firmwareprüfung an.
 
 ## Netzwerk
 
@@ -139,6 +146,7 @@ platformio.ini           PlatformIO-Projektkonfiguration
 ## Hinweise
 
 - MQTT ist derzeit unverschlüsselt und sollte nur in einem vertrauenswürdigen LAN verwendet werden.
+- Die HTTPS-Verbindung für die reine Versionsabfrage verschlüsselt die Übertragung, prüft auf dem ESP32 aber kein CA-Zertifikat. Deshalb werden Updates niemals automatisch heruntergeladen oder installiert; der Download-Link führt fest zum offiziellen Repository.
 - WLAN und Bluetooth teilen sich den Funkchip. Sehr kurze Abfrageintervalle und BLE-Scans können die Weboberfläche vorübergehend verlangsamen.
 - Ohne Zugriff auf jede Thermostat-Hardware- und Firmwarevariante kann die Pairing-Abfolge nicht für alle Revisionen garantiert werden.
 
