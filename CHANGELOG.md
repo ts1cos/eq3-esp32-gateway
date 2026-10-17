@@ -1,5 +1,12 @@
 # Versionshistorie
 
+## 1.4.1
+
+- Web-Anmeldung erhält einen eindeutigen Ein-/Aus-Schalter und ist standardmäßig ausgeschaltet
+- Deaktivieren des Schalters löscht ein zuvor gespeichertes Web-Passwort
+- Passwortmanager können das Web-Passwort beim Setup nicht mehr unbemerkt aktivieren
+- Bei aktivierter Web-Anmeldung wird der Benutzername `admin` direkt angezeigt
+
 ## 1.4.0
 
 - Thermostatnamen nachträglich ändern
@@ -37,4 +44,5 @@
 - Bis zu drei eQ-3/Eqiva-Thermostate
 - MQTT und Home Assistant Discovery
 - OTA-Update und Neustart-Funktion
+
 
