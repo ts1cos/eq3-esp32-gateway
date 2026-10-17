@@ -1,5 +1,13 @@
 # Versionshistorie
 
+## 1.5.0
+
+- Manuelle und automatische Prüfung auf neue Firmware über GitHub
+- Anzeige der installierten und der auf GitHub verfügbaren Version
+- Direkter Link zum neuesten GitHub Release in der Weboberfläche
+- Komprimierte Auslieferung der Weboberfläche, damit das bestehende OTA-Partitionslayout erhalten bleibt
+- Altes ESP32-C6-Firmwarearchiv entfernt; veröffentlicht wird ausschließlich WROOM-32D-Firmware
+
 ## 1.4.1
 
 - Web-Anmeldung erhält einen eindeutigen Ein-/Aus-Schalter und ist standardmäßig ausgeschaltet
