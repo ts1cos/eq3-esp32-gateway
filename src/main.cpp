@@ -5,12 +5,13 @@
 #include <Update.h>
 #include <WebServer.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 #include <cctype>
 
 #include "AppConfig.h"
 #include "BuildInfo.h"
 #include "Eq3Client.h"
-#include "WebPage.h"
+#include "WebPageGz.h"
 
 namespace {
 AppConfig config;
@@ -26,6 +27,18 @@ unsigned long lastThermostatPoll[AppConfig::MAX_THERMOSTATS] = {};
 size_t nextThermostatPoll = 0;
 unsigned long restartAt = 0;
 String otaUploadError;
+String latestFirmwareVersion;
+String firmwareCheckError;
+unsigned long lastFirmwareCheckAt = 0;
+bool firmwareCheckInProgress = false;
+
+constexpr const char* FIRMWARE_MANIFEST_HOST = "raw.githubusercontent.com";
+constexpr const char* FIRMWARE_MANIFEST_PATH =
+    "/ts1cos/eq3-esp32-gateway/main/firmware/latest.json";
+constexpr const char* FIRMWARE_RELEASE_URL =
+    "https://github.com/ts1cos/eq3-esp32-gateway/releases/latest";
+constexpr unsigned long FIRST_FIRMWARE_CHECK_DELAY_MS = 30000UL;
+constexpr unsigned long FIRMWARE_CHECK_INTERVAL_MS = 21600000UL;
 
 const char OTA_SUCCESS_PAGE[] PROGMEM = R"HTML(
 <!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OTA-Update erfolgreich</title><style>body{margin:0;display:grid;min-height:100vh;place-items:center;background:#0b1118;color:#edf4fb;font:16px system-ui,sans-serif}.box{max-width:520px;margin:20px;padding:28px;border:1px solid #263545;border-radius:16px;background:#151e29;text-align:center}h1{font-size:25px}.spin{width:32px;height:32px;margin:24px auto;border:4px solid #263545;border-top-color:#49d7a0;border-radius:50%;animation:r 1s linear infinite}@keyframes r{to{transform:rotate(360deg)}}p{color:#91a5b8}</style></head><body><div class="box"><h1>OTA-Update erfolgreich</h1><div class="spin"></div><p id="status">Das Gateway startet neu. Sobald es wieder erreichbar ist, öffnet sich automatisch die Hauptseite.</p></div><script>let attempts=0;async function returnHome(){attempts++;document.getElementById('status').textContent='Gateway startet neu … Verbindungsversuch '+attempts;try{const response=await fetch('/api/status?ota='+Date.now(),{cache:'no-store'});if(response.ok){location.replace('/');return}}catch(e){}setTimeout(returnHome,1500)}setTimeout(returnHome,8000)</script></body></html>
@@ -40,6 +53,95 @@ String jsonEscape(const String& input) {
     else if (static_cast<uint8_t>(c) >= 0x20) output += c;
   }
   return output;
+}
+
+String jsonStringValue(const String& json, const String& key) {
+  String marker = "\"" + key + "\"";
+  int start = json.indexOf(marker);
+  if (start < 0) return "";
+  start = json.indexOf(':', start + marker.length());
+  if (start < 0) return "";
+  start = json.indexOf('"', start + 1);
+  if (start < 0) return "";
+  int end = start + 1;
+  while (end < static_cast<int>(json.length())) {
+    if (json[end] == '"' && json[end - 1] != '\\') return json.substring(start + 1, end);
+    ++end;
+  }
+  return "";
+}
+
+bool parseVersion(const String& value, int& major, int& minor, int& patch) {
+  String version = value;
+  version.trim();
+  if (version.startsWith("v")) version.remove(0, 1);
+  char tail = 0;
+  return sscanf(version.c_str(), "%d.%d.%d%c", &major, &minor, &patch, &tail) == 3 &&
+         major >= 0 && minor >= 0 && patch >= 0;
+}
+
+bool isNewerVersion(const String& candidate, const String& current) {
+  int candidateMajor, candidateMinor, candidatePatch;
+  int currentMajor, currentMinor, currentPatch;
+  if (!parseVersion(candidate, candidateMajor, candidateMinor, candidatePatch) ||
+      !parseVersion(current, currentMajor, currentMinor, currentPatch)) return false;
+  if (candidateMajor != currentMajor) return candidateMajor > currentMajor;
+  if (candidateMinor != currentMinor) return candidateMinor > currentMinor;
+  return candidatePatch > currentPatch;
+}
+
+bool firmwareUpdateAvailable() {
+  return !latestFirmwareVersion.isEmpty() && isNewerVersion(latestFirmwareVersion, FIRMWARE_VERSION);
+}
+
+bool checkForFirmwareUpdate() {
+  lastFirmwareCheckAt = millis() ? millis() : 1;
+  firmwareCheckInProgress = true;
+  firmwareCheckError = "";
+
+  WiFiClientSecure secureClient;
+  // The check only reads a version string. Firmware installation always remains manual.
+  secureClient.setInsecure();
+  secureClient.setTimeout(5000);
+  if (!secureClient.connect(FIRMWARE_MANIFEST_HOST, 443)) {
+    firmwareCheckError = "GitHub ist momentan nicht erreichbar.";
+    firmwareCheckInProgress = false;
+    return false;
+  }
+
+  secureClient.print("GET ");
+  secureClient.print(FIRMWARE_MANIFEST_PATH);
+  secureClient.print(" HTTP/1.1\r\nHost: ");
+  secureClient.print(FIRMWARE_MANIFEST_HOST);
+  secureClient.print("\r\nUser-Agent: eq3-esp32-gateway/");
+  secureClient.print(FIRMWARE_VERSION);
+  secureClient.print("\r\nConnection: close\r\n\r\n");
+
+  String statusLine = secureClient.readStringUntil('\n');
+  statusLine.trim();
+  if (statusLine.indexOf(" 200 ") < 0) {
+    firmwareCheckError = "GitHub antwortet nicht mit einer gültigen Versionsdatei.";
+    secureClient.stop();
+    firmwareCheckInProgress = false;
+    return false;
+  }
+
+  while (secureClient.connected() || secureClient.available()) {
+    String header = secureClient.readStringUntil('\n');
+    if (header == "\r" || header.isEmpty()) break;
+  }
+  String version = jsonStringValue(secureClient.readString(), "version");
+  secureClient.stop();
+  int major, minor, patch;
+  if (!parseVersion(version, major, minor, patch)) {
+    firmwareCheckError = "Die Versionsinformation auf GitHub ist ungültig.";
+    firmwareCheckInProgress = false;
+    return false;
+  }
+
+  latestFirmwareVersion = version.startsWith("v") ? version.substring(1) : version;
+  firmwareCheckInProgress = false;
+  return true;
 }
 
 String deviceId(const String& address) {
@@ -119,6 +221,13 @@ String stateJson(bool includeSettings) {
   json += ",\"firmwareVersion\":\"" + String(FIRMWARE_VERSION) + "\"";
   json += ",\"firmwareAuthor\":\"" + String(FIRMWARE_AUTHOR) + "\"";
   json += ",\"firmwareBoard\":\"" + String(FIRMWARE_BOARD) + "\"";
+  json += ",\"latestFirmwareVersion\":\"" + jsonEscape(latestFirmwareVersion) + "\"";
+  json += ",\"firmwareUpdateAvailable\":" + String(firmwareUpdateAvailable() ? "true" : "false");
+  json += ",\"firmwareCheckInProgress\":" + String(firmwareCheckInProgress ? "true" : "false");
+  json += ",\"firmwareCheckError\":\"" + jsonEscape(firmwareCheckError) + "\"";
+  json += ",\"firmwareReleaseUrl\":\"" + String(FIRMWARE_RELEASE_URL) + "\"";
+  json += ",\"firmwareLastCheckSecondsAgo\":";
+  json += lastFirmwareCheckAt ? String((millis() - lastFirmwareCheckAt) / 1000UL) : String(-1);
   json += ",\"configuredDevices\":" + String(config.thermostatCount());
   size_t connectedCount = 0;
   for (size_t i = 0; i < AppConfig::MAX_THERMOSTATS; ++i) {
@@ -360,9 +469,20 @@ void setupRoutes() {
   server.on("/", HTTP_GET, [] {
     if (!authorize()) return;
     server.sendHeader("Cache-Control", "no-store");
-    server.send_P(200, "text/html; charset=utf-8", WEB_PAGE);
+    server.sendHeader("Content-Encoding", "gzip");
+    server.send_P(200, "text/html; charset=utf-8", reinterpret_cast<PGM_P>(WEB_PAGE_GZ), WEB_PAGE_GZ_LEN);
   });
   server.on("/api/status", HTTP_GET, [] { if (authorize()) sendJson(200, stateJson(true)); });
+
+  server.on("/api/update/check", HTTP_POST, [] {
+    if (!authorize()) return;
+    if (WiFi.status() != WL_CONNECTED) {
+      sendJson(503, "{\"message\":\"Für die GitHub-Prüfung wird eine WLAN-Verbindung benötigt.\"}");
+      return;
+    }
+    checkForFirmwareUpdate();
+    sendJson(200, stateJson(false));
+  });
 
   server.on("/api/scan", HTTP_POST, [] {
     if (!authorize()) return;
@@ -698,6 +818,11 @@ void loop() {
   if (accessPointActive) dns.processNextRequest();
   maintainMqtt();
   maintainThermostats();
+  if (!accessPointActive && WiFi.status() == WL_CONNECTED && !firmwareCheckInProgress &&
+      ((lastFirmwareCheckAt == 0 && millis() >= FIRST_FIRMWARE_CHECK_DELAY_MS) ||
+       (lastFirmwareCheckAt != 0 && millis() - lastFirmwareCheckAt >= FIRMWARE_CHECK_INTERVAL_MS))) {
+    checkForFirmwareUpdate();
+  }
   if (restartAt && millis() >= restartAt) ESP.restart();
   delay(2);
 }
